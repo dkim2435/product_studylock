@@ -145,3 +145,51 @@ async def notion_test(total: int = 23, passed: int = 23, failed: int = 0):
     from app.mcp.notion_sync import log_test_results
     result = await log_test_results(NOTION_PAGE_ID, total, passed, failed)
     return result
+
+
+# ===== Playwright MCP Endpoints =====
+
+@app.post("/api/monitor/health")
+async def monitor_health():
+    """AI-driven site health check via Playwright MCP."""
+    from app.mcp.playwright_monitor import check_site_health
+    return await check_site_health()
+
+
+@app.post("/api/monitor/canvas")
+async def monitor_canvas():
+    """Verify Canvas rendering via Playwright MCP."""
+    from app.mcp.playwright_monitor import check_canvas_rendering
+    return await check_canvas_rendering()
+
+
+@app.post("/api/monitor/sound")
+async def monitor_sound():
+    """Verify sound system via Playwright MCP."""
+    from app.mcp.playwright_monitor import check_sound_system
+    return await check_sound_system()
+
+
+@app.post("/api/monitor/rooms")
+async def monitor_rooms():
+    """Verify room navigation via Playwright MCP."""
+    from app.mcp.playwright_monitor import check_room_navigation
+    return await check_room_navigation()
+
+
+@app.post("/api/monitor/full")
+async def monitor_full():
+    """Run all Playwright MCP checks and return combined report."""
+    from app.mcp.playwright_monitor import (
+        check_site_health, check_canvas_rendering,
+        check_sound_system, check_room_navigation,
+    )
+    results = {
+        "health": await check_site_health(),
+        "canvas": await check_canvas_rendering(),
+        "sound": await check_sound_system(),
+        "rooms": await check_room_navigation(),
+    }
+    all_ok = all(r.get("status") == "ok" or r.get("status") == "healthy" for r in results.values())
+    results["overall"] = "all_passed" if all_ok else "some_failed"
+    return results

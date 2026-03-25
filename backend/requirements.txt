@@ -8,3 +8,4 @@ crewai==0.120.1
 autogen-agentchat==0.4.12
 mcp==1.9.3
 httpx==0.28.1
+playwright==1.52.0
