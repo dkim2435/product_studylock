@@ -6,8 +6,13 @@ Architecture:
 - /api/agents/force    — Force run agent crew (for demo)
 - /api/agents/log      — Get agent discussion log
 - /api/rooms/stats     — Get room statistics
+- /api/notion/sync     — Sync tech stack docs to Notion (MCP)
+- /api/notion/deploy   — Log deploy result to Notion
+- /api/notion/test     — Log test results to Notion
 - /api/health          — Health check
 """
+
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -111,3 +116,32 @@ async def graph_run(room_id: str = "1F"):
 
     result = room_graph.invoke(initial_state)
     return {"state": result}
+
+
+# ===== Notion MCP Endpoints =====
+
+NOTION_PAGE_ID = os.getenv("NOTION_PAGE_ID", "32eb0da0c373801487f0dbebfc58b58b")
+
+
+@app.post("/api/notion/sync")
+async def notion_sync():
+    """Sync full tech stack documentation to Notion via MCP."""
+    from app.mcp.notion_sync import sync_tech_stack
+    result = await sync_tech_stack(NOTION_PAGE_ID)
+    return result
+
+
+@app.post("/api/notion/deploy")
+async def notion_deploy(status: str = "success", version: str = "1.0.0", environment: str = "production"):
+    """Log deployment result to Notion via MCP."""
+    from app.mcp.notion_sync import log_deploy
+    result = await log_deploy(NOTION_PAGE_ID, status, version, environment)
+    return result
+
+
+@app.post("/api/notion/test")
+async def notion_test(total: int = 23, passed: int = 23, failed: int = 0):
+    """Log test results to Notion via MCP."""
+    from app.mcp.notion_sync import log_test_results
+    result = await log_test_results(NOTION_PAGE_ID, total, passed, failed)
+    return result
