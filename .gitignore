@@ -7,3 +7,6 @@ node_modules/
 Thumbs.db
 dist/
 .vercel
+__pycache__/
+playwright-report/
+test-results/
