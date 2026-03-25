@@ -64,6 +64,15 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
     onUserCountChangeRef.current?.(totalCount);
   }, [users, totalCount]);
 
+  // Update weather on existing renderer without reinitializing
+  useEffect(() => {
+    const renderer = rendererRef.current;
+    if (renderer) {
+      renderer.setTimeOfDay(weather.isNight);
+      renderer.setWeather(weather.isRaining);
+    }
+  }, [weather.isNight, weather.isRaining]);
+
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
 
@@ -135,7 +144,7 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
       resizeObserver?.disconnect();
       cmRef.current = null;
     };
-  }, [roomId, localPalette, zoom, weather.isNight, weather.isRaining]);
+  }, [roomId, localPalette, zoom]);
 
   const handleZoomIn = () => setZoom(z => Math.min(z + 1, 8));
   const handleZoomOut = () => setZoom(z => Math.max(z - 1, 1));
