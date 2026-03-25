@@ -13,10 +13,21 @@ Users are auto-placed in a room with available seats. When a room is full, they'
 
 | Room Name | Visual | Default Ambience |
 |-----------|--------|-----------------|
-| 1F Reading Room | Bright library, large windows | Quiet page-turning sounds |
-| 2F Reading Room | Dim lighting, desk lamps | Clock ticking + pencil writing |
-| Cafe Study Room | Cafe interior | Coffee machine + soft chatter |
-| Outdoor Garden | Trees, benches | Birds + gentle wind |
+| 1F Classic Library | Bookshelves, 2 windows | Quiet page-turning sounds |
+| 2F Modern Study | Minimal bookshelves, 2 windows | Clock ticking + pencil writing |
+| 7F Minimal | Clean design, 4 windows | Quiet |
+| 9F Rooftop | Panoramic 5 windows, open feel | Birds + gentle wind |
+| 14F Dark Room | 1 small window, spotlight effect | Ambient |
+| Cafe Lounge | Cafe interior, 2 windows | Coffee machine + soft chatter |
+| Outdoor Garden | Open sky (outdoor), no walls | Birds + gentle wind |
+
+### Window & Weather Visuals
+
+All indoor study floors have windows on the top wall that reflect real-time weather:
+- **Day**: Blue sky, drifting clouds, sunlight on floor
+- **Night**: Stars, moon, dimmed room lighting
+- **Rain**: Gray sky, rain streaks in windows (indoor only)
+- **Outdoor (Garden)**: Sky replaces top wall entirely, rain falls on whole room
 
 ## User Flow
 

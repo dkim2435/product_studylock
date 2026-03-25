@@ -30,6 +30,12 @@ Automated tests for all major user flows. Runs on CI/CD with every PR.
 - [ ] Room full → shows "Room is full" message
 - [ ] Can select another room
 
+### 6. Window & Weather Visuals
+- [ ] Windows render on study floors (no crash on any floor)
+- [ ] Rooftop (9F) renders with panoramic windows
+- [ ] Outdoor Garden renders sky background instead of walls
+- [ ] Weather badge appears conditionally (rain/night)
+
 ## Running Tests
 
 ```bash

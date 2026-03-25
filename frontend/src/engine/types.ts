@@ -35,12 +35,21 @@ export interface Character {
   isLocal?: boolean;
 }
 
+export interface WindowDef {
+  col: number;  // Tile column (on the top wall)
+  row: number;  // Tile row (0 for top wall)
+  width: number;  // Width in tiles (typically 2)
+  height: number; // Height in tiles (typically 2)
+}
+
 export interface RoomLayout {
   cols: number;
   rows: number;
   tiles: number[][]; // 0=wall, 1=floor
   furniture: FurnitureItem[];
   seats: { id: string; col: number; row: number; furnitureId: string }[];
+  windows?: WindowDef[];
+  outdoor?: boolean;
 }
 
 export interface AmbienceSound {
