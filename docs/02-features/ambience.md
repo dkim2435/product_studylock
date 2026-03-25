@@ -30,10 +30,17 @@ Users mix sounds via sliders, or AI auto-sets based on weather/time conditions.
 - Independent sliders per sound
 - Preset buttons: [ 😴 Sleepy ] [ 🎯 Focus ] [ 😌 Relax ]
 
+## Playback Behavior
+
+- All categories auto-advance to the next track when the current one ends
+- Cabin: plays in strict order (1→2→3→4→1...)
+- Others (Lofi, Rain, Ocean, Birds, Fire): shuffle to a random next track
+- Skip forward (▶▶) and skip backward (◀◀) always available
+
 ## Tech
 
-- Howler.js — browser audio playback, loop, volume control
-- Web Audio API — crossfade, filters if needed
+- Howler.js — browser audio playback, volume control
+- Web Audio API — analyser for visualizer, crossfade if needed
 
 ## AI Integration (Weather Auto-Sync)
 

@@ -88,7 +88,7 @@ export function useAmbience() {
 
     const howl = new Howl({
       src: [`/assets/sounds/${file}`],
-      loop: !isSequential, // Sequential tracks don't loop individually
+      loop: false, // Never loop — always advance to next track
       volume: isMuted ? 0 : vol,
       html5: false, // Use Web Audio API for analyser access
       onplay: () => {
@@ -111,12 +111,21 @@ export function useAmbience() {
         }
       },
       onend: () => {
-        // Sequential: auto-play next track in order
+        // Auto-advance: cabin plays in order, others shuffle
+        let nextIdx: number;
         if (isSequential) {
-          const nextIdx = (safeIdx + 1) % option.files.length;
-          setTrackIndex(nextIdx);
-          playTrack(soundId, nextIdx, vol);
+          nextIdx = (safeIdx + 1) % option.files.length;
+        } else if (option.files.length <= 1) {
+          nextIdx = 0;
+        } else {
+          // Random next, avoiding same track
+          nextIdx = safeIdx;
+          while (nextIdx === safeIdx) {
+            nextIdx = Math.floor(Math.random() * option.files.length);
+          }
         }
+        setTrackIndex(nextIdx);
+        playTrack(soundId, nextIdx, vol);
       },
     });
 
