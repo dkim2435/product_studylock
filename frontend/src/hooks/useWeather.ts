@@ -9,13 +9,18 @@ interface WeatherData {
   temperature: number;
 }
 
+function checkIsNight() {
+  const hour = new Date().getHours();
+  return hour >= 20 || hour < 6;
+}
+
 export function useWeather() {
-  const [weather, setWeather] = useState<WeatherData>({
+  const [weather, setWeather] = useState<WeatherData>(() => ({
     isRaining: false,
-    isNight: false,
+    isNight: checkIsNight(),
     condition: 'clear',
     temperature: 20,
-  });
+  }));
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
