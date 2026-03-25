@@ -8,6 +8,7 @@ import { getLayoutForRoom, getFloorTheme, BREAK_THEMES } from '@/engine/tileMap'
 import { loadAllAssets, LoadedAssets } from '@/engine/assetLoader';
 import { DEFAULT_ZOOM } from '@/engine/types';
 import { usePresence } from '@/hooks/usePresence';
+import { useWeather } from '@/hooks/useWeather';
 
 interface StudyRoomProps {
   onUserCountChange?: (count: number) => void;
@@ -32,6 +33,8 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
 
   // Real-time presence
   const { users, totalCount } = usePresence(roomId, localPalette);
+  // Live weather data
+  const weather = useWeather();
 
   // Sync presence users → character manager
   const prevUserIdsRef = useRef<Set<string>>(new Set());
@@ -95,8 +98,9 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
       renderer.setTheme(theme);
       rendererRef.current = renderer;
 
-      const hour = new Date().getHours();
-      renderer.setTimeOfDay(hour >= 20 || hour < 6);
+      // Weather-driven visuals via MCP weather data
+      renderer.setTimeOfDay(weather.isNight);
+      renderer.setWeather(weather.isRaining);
 
       const resizeCanvas = () => {
         const rect = container.getBoundingClientRect();
@@ -127,7 +131,7 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
       resizeObserver?.disconnect();
       cmRef.current = null;
     };
-  }, [roomId, localPalette, zoom]);
+  }, [roomId, localPalette, zoom, weather.isNight, weather.isRaining]);
 
   const handleZoomIn = () => setZoom(z => Math.min(z + 1, 8));
   const handleZoomOut = () => setZoom(z => Math.max(z - 1, 1));
@@ -151,6 +155,16 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
       {isBreakRoom && (
         <div className="absolute top-2 left-2 bg-amber-800/80 text-amber-200 text-xs px-2 py-1 rounded font-mono z-20">
           {isCafe ? '☕' : '🌿'} Break Time
+        </div>
+      )}
+      {weather.isRaining && !isBreakRoom && (
+        <div className="absolute top-2 left-2 bg-blue-900/80 text-blue-200 text-xs px-2 py-1 rounded font-mono z-20">
+          🌧 Raining outside
+        </div>
+      )}
+      {weather.isNight && !isBreakRoom && !weather.isRaining && (
+        <div className="absolute top-2 left-2 bg-indigo-900/80 text-indigo-200 text-xs px-2 py-1 rounded font-mono z-20">
+          🌙 Night mode
         </div>
       )}
     </div>
