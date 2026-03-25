@@ -98,6 +98,10 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
       renderer.setTheme(theme);
       rendererRef.current = renderer;
 
+      // Window positions for weather visuals
+      renderer.setWindows(layout.windows ?? []);
+      renderer.setOutdoor(layout.outdoor ?? false);
+
       // Weather-driven visuals via MCP weather data
       renderer.setTimeOfDay(weather.isNight);
       renderer.setWeather(weather.isRaining);
