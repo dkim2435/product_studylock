@@ -7,6 +7,7 @@ import { CharacterManager } from '@/engine/characters';
 import { getLayoutForRoom, getFloorTheme, BREAK_THEMES } from '@/engine/tileMap';
 import { loadAllAssets, LoadedAssets } from '@/engine/assetLoader';
 import { DEFAULT_ZOOM } from '@/engine/types';
+import { usePresence } from '@/hooks/usePresence';
 
 interface StudyRoomProps {
   onUserCountChange?: (count: number) => void;
@@ -21,7 +22,7 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const assetsRef = useRef<LoadedAssets | null>(null);
   const rendererRef = useRef<Renderer | null>(null);
-  // Use ref for callback to avoid re-triggering useEffect
+  const cmRef = useRef<CharacterManager | null>(null);
   const onUserCountChangeRef = useRef(onUserCountChange);
   onUserCountChangeRef.current = onUserCountChange;
 
@@ -29,12 +30,42 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
   const isGarden = roomId === 'garden';
   const isBreakRoom = isCafe || isGarden;
 
+  // Real-time presence
+  const { users, totalCount } = usePresence(roomId, localPalette);
+
+  // Sync presence users → character manager
+  const prevUserIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const cm = cmRef.current;
+    if (!cm) return;
+
+    const currentIds = new Set(users.map(u => u.id));
+    const prevIds = prevUserIdsRef.current;
+
+    // Add new users
+    users.forEach(u => {
+      if (!prevIds.has(u.id)) {
+        cm.addCharacter(u.id, false, u.palette);
+      }
+    });
+
+    // Remove left users
+    prevIds.forEach(id => {
+      if (!currentIds.has(id)) {
+        cm.removeCharacter(id);
+      }
+    });
+
+    prevUserIdsRef.current = currentIds;
+    onUserCountChangeRef.current?.(totalCount);
+  }, [users, totalCount]);
+
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
 
     let gameLoop: GameLoop | undefined;
     let resizeObserver: ResizeObserver | undefined;
-    let userSimInterval: NodeJS.Timeout | undefined;
     let cancelled = false;
 
     async function init() {
@@ -49,7 +80,6 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
 
       const layout = getLayoutForRoom(roomId);
 
-      // Get theme
       let theme;
       if (roomId === 'cafe' || roomId === 'garden') {
         theme = { ...BREAK_THEMES[roomId], isDarkRoom: false };
@@ -68,7 +98,6 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
       const hour = new Date().getHours();
       renderer.setTimeOfDay(hour >= 20 || hour < 6);
 
-      // Resize once + observe
       const resizeCanvas = () => {
         const rect = container.getBoundingClientRect();
         renderer.resize(rect.width, rect.height);
@@ -77,34 +106,12 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
       resizeObserver = new ResizeObserver(resizeCanvas);
       resizeObserver.observe(container);
 
-      // Characters
+      // Character manager — local player only, others come from presence
       const cm = new CharacterManager(layout);
-
-      // Simulated users
-      const seed = roomId.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-      const fakeCount = isBreakRoom ? 2 + (seed % 4) : 4 + (seed % 6);
-      for (let i = 0; i < fakeCount; i++) {
-        cm.addCharacter(`${roomId}-user-${i}`, false);
-      }
       cm.addCharacter('local', true, localPalette);
-      onUserCountChangeRef.current?.(cm.getCharacters().length);
+      cmRef.current = cm;
+      prevUserIdsRef.current = new Set();
 
-      // Periodic user simulation
-      userSimInterval = setInterval(() => {
-        const chars = cm.getCharacters();
-        const nonLocal = chars.filter(c => !c.isLocal);
-
-        if (Math.random() > 0.45 && cm.getAvailableSeats() > 1) {
-          const newId = `${roomId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-          cm.addCharacter(newId, false);
-        } else if (nonLocal.length > 2) {
-          const leaving = nonLocal[Math.floor(Math.random() * nonLocal.length)];
-          if (leaving) cm.removeCharacter(leaving.id);
-        }
-        onUserCountChangeRef.current?.(cm.getCharacters().length);
-      }, 10000 + Math.random() * 15000);
-
-      // Game loop
       gameLoop = new GameLoop((dt) => {
         cm.update(dt);
         renderer.render(layout.tiles, layout.furniture, cm.getCharacters(), layout.cols, layout.rows);
@@ -117,10 +124,10 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
     return () => {
       cancelled = true;
       gameLoop?.stop();
-      if (userSimInterval) clearInterval(userSimInterval);
       resizeObserver?.disconnect();
+      cmRef.current = null;
     };
-  }, [roomId, localPalette, zoom, isBreakRoom]);
+  }, [roomId, localPalette, zoom]);
 
   const handleZoomIn = () => setZoom(z => Math.min(z + 1, 8));
   const handleZoomOut = () => setZoom(z => Math.max(z - 1, 1));
