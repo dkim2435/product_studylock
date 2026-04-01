@@ -1,0 +1,16 @@
+{
+  "name": "StudyLock",
+  "short_name": "StudyLock",
+  "description": "A real-time collaborative study room with pixel-art visuals, ambience sounds, and pomodoro timer.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0a09",
+  "theme_color": "#0c0a09",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}
