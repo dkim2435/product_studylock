@@ -39,6 +39,13 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def startup():
+    """Run agents once on startup so status indicator is live immediately."""
+    import asyncio
+    asyncio.create_task(study_lock_crew.run("1F"))
+
+
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "service": "studylock-backend"}

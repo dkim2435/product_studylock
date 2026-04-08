@@ -107,13 +107,11 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <span className="text-2xl">📚</span>
             <h1 className="font-mono text-lg font-bold text-amber-200">StudyLock</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-stone-400 text-sm font-mono">{totalUsers} online</span>
-            </div>
             <AiStatus />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-stone-400 text-sm font-mono">{totalUsers} online</span>
           </div>
         </div>
       </header>
