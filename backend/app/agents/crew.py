@@ -15,10 +15,12 @@ from app.mcp.tools import get_weather, get_time_info, get_room_stats
 
 
 def _create_llm():
+    import os
     return ChatAnthropic(
         model="claude-haiku-4-5-20251001",
         temperature=0.3,
         max_tokens=512,
+        anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
     )
 
 
