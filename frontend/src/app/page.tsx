@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useMemo } from 'react';
 import StudyRoom from '@/components/StudyRoom';
 import AmbienceMixer from '@/components/AmbienceMixer';
 import Timer from '@/components/Timer';
+import AiStatus from '@/components/AiStatus';
 import { getFloorTheme, BREAK_THEMES, MAX_PER_FLOOR, MAX_BREAK_ROOM } from '@/engine/tileMap';
 
 export default function Home() {
@@ -107,9 +108,12 @@ export default function Home() {
             <span className="text-2xl">📚</span>
             <h1 className="font-mono text-lg font-bold text-amber-200">StudyLock</h1>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-stone-400 text-sm font-mono">{totalUsers} online</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-stone-400 text-sm font-mono">{totalUsers} online</span>
+            </div>
+            <AiStatus />
           </div>
         </div>
       </header>

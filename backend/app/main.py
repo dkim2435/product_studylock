@@ -44,6 +44,25 @@ async def health():
     return {"status": "ok", "service": "studylock-backend"}
 
 
+@app.get("/api/status")
+async def status():
+    """Check AI pipeline status — last run results and component health."""
+    log = study_lock_crew.get_discussion_log()
+    last_run = log[-1] if log else None
+    return {
+        "healthy": True,
+        "last_run": {
+            "timestamp": last_run["timestamp"],
+            "crewai": last_run["status"]["crewai"],
+            "autogen": last_run["status"]["autogen"],
+            "mcp": last_run["status"]["mcp"],
+            "consensus": last_run["consensus"],
+        } if last_run and "status" in last_run else None,
+        "total_runs": len(log),
+        "api_key_configured": bool(os.getenv("ANTHROPIC_API_KEY")),
+    }
+
+
 @app.get("/api/rooms/stats")
 async def rooms_stats():
     """Get current room statistics via MCP tools."""

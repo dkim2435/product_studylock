@@ -128,7 +128,12 @@ class StudyLockCrew:
 
         # Step 3: Run crew
         crew.tasks = [atmosphere_task, environment_task, room_task]
-        crew_result = crew.kickoff()
+        crew_status = "live"
+        try:
+            crew_result = crew.kickoff()
+        except Exception as e:
+            crew_status = "fallback"
+            crew_result = f"Fallback: {time_info['period']} preset, {'rain' if weather['is_raining'] else 'clear'} conditions."
 
         # Step 4: AutoGen discussion for consensus
         discussion = await self._autogen_discussion(
@@ -143,6 +148,11 @@ class StudyLockCrew:
             "crew_output": str(crew_result),
             "discussion": discussion,
             "consensus": discussion["final_decision"],
+            "status": {
+                "crewai": crew_status,
+                "autogen": discussion["status"],
+                "mcp": "live",
+            },
         }
 
         self.discussion_log.append(result)
@@ -155,12 +165,16 @@ class StudyLockCrew:
         self, crew_output: str, weather: dict, time_info: dict,
     ) -> dict[str, Any]:
         """AutoGen-style multi-agent discussion for consensus."""
+        import os
         from autogen_agentchat.agents import AssistantAgent
         from autogen_agentchat.teams import RoundRobinGroupChat
         from autogen_agentchat.conditions import MaxMessageTermination
-        from autogen_agentchat.ui import Console
+        from autogen_ext.models.anthropic import AnthropicChatCompletionClient
 
-        model_client = _create_llm()
+        model_client = AnthropicChatCompletionClient(
+            model="claude-haiku-4-5-20251001",
+            api_key=os.getenv("ANTHROPIC_API_KEY"),
+        )
 
         atmosphere_agent = AssistantAgent(
             name="AtmosphereAgent",
@@ -190,6 +204,7 @@ class StudyLockCrew:
         )
 
         discussion_turns = []
+        autogen_status = "live"
         try:
             result = await team.run(task=f"Review and reach consensus on environment settings. Crew analysis: {crew_output[:500]}")
 
@@ -199,7 +214,7 @@ class StudyLockCrew:
                     "message": msg.content[:300] if isinstance(msg.content, str) else str(msg.content)[:300],
                 })
         except Exception as e:
-            # Fallback if AutoGen fails (e.g., no API key)
+            autogen_status = "fallback"
             discussion_turns = [
                 {"agent": "AtmosphereAgent", "message": f"Recommending {time_info['period']} preset for {'rainy' if weather['is_raining'] else weather['condition']} conditions."},
                 {"agent": "EnvironmentAgent", "message": f"Setting {'dim' if time_info['is_night'] else 'bright'} lighting. {'Rain effects enabled.' if weather['is_raining'] else ''}"},
@@ -213,6 +228,7 @@ class StudyLockCrew:
             "turns": discussion_turns,
             "turn_count": len(discussion_turns),
             "final_decision": final,
+            "status": autogen_status,
         }
 
     def get_discussion_log(self) -> list[dict[str, Any]]:

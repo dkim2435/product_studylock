@@ -6,6 +6,7 @@ langchain-anthropic==0.3.12
 langgraph==0.4.7
 crewai==0.120.1
 autogen-agentchat==0.4.9.3
+autogen-ext[anthropic]==0.4.9.3
 mcp==1.9.3
 httpx==0.28.1
 playwright==1.52.0
