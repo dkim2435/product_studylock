@@ -9,7 +9,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://studylock.vercel.app";
+const SITE_URL = "https://studylock.dev";
 const SITE_NAME = "StudyLock";
 const SITE_TITLE = "StudyLock - Study Together in a Pixel-Art Library";
 const SITE_DESCRIPTION =
@@ -95,14 +95,14 @@ export default function RootLayout({
                 {
                   "@type": "WebSite",
                   name: "StudyLock",
-                  url: "https://studylock.vercel.app",
+                  url: SITE_URL,
                   description:
                     "A real-time collaborative study room with pixel-art visuals, ambience sounds, and pomodoro timer.",
                 },
                 {
                   "@type": "WebApplication",
                   name: "StudyLock",
-                  url: "https://studylock.vercel.app",
+                  url: SITE_URL,
                   applicationCategory: "EducationalApplication",
                   operatingSystem: "Any",
                   offers: {

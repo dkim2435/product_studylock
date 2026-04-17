@@ -32,9 +32,19 @@ export function usePresence(roomId: string, localPalette: number) {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const localIdRef = useRef<string>(`user-${Math.random().toString(36).slice(2, 10)}`);
   const dummyIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const paletteRef = useRef(localPalette);
 
   // All users combined
   const allUsers = [...realUsers, ...dummyUsers];
+
+  // Track palette changes without tearing down the channel — republish presence instead.
+  useEffect(() => {
+    paletteRef.current = localPalette;
+    const channel = channelRef.current;
+    if (channel) {
+      channel.track({ palette: localPalette, joinedAt: Date.now() });
+    }
+  }, [localPalette]);
 
   useEffect(() => {
     const localId = localIdRef.current;
@@ -76,7 +86,7 @@ export function usePresence(roomId: string, localPalette: number) {
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await channel.track({
-            palette: localPalette,
+            palette: paletteRef.current,
             joinedAt: Date.now(),
           });
         }
@@ -113,7 +123,7 @@ export function usePresence(roomId: string, localPalette: number) {
       channelRef.current = null;
       if (dummyIntervalRef.current) clearInterval(dummyIntervalRef.current);
     };
-  }, [roomId, localPalette]);
+  }, [roomId]);
 
   // Get count for a room we're NOT in (for sidebar display)
   const getOtherRoomCount = useCallback((otherRoomId: string): number => {

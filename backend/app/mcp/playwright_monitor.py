@@ -68,37 +68,38 @@ async def check_site_health(url: str = "https://studylock.dev") -> dict[str, Any
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
+            try:
+                page = await browser.new_page()
 
-            start = datetime.now()
-            response = await page.goto(url, wait_until="networkidle", timeout=15000)
-            load_time = (datetime.now() - start).total_seconds()
+                start = datetime.now()
+                response = await page.goto(url, wait_until="networkidle", timeout=15000)
+                load_time = (datetime.now() - start).total_seconds()
 
-            title = await page.title()
-            status = response.status if response else 0
+                title = await page.title()
+                status = response.status if response else 0
 
-            # Check for critical elements
-            has_canvas = await page.locator("canvas").count() > 0
-            has_header = await page.get_by_text("StudyLock").count() > 0
-            has_timer = await page.get_by_text("25:00").count() > 0
-            has_floors = await page.get_by_text("Floors").count() > 0
+                # Check for critical elements
+                has_canvas = await page.locator("canvas").count() > 0
+                has_header = await page.get_by_text("StudyLock").count() > 0
+                has_timer = await page.get_by_text("25:00").count() > 0
+                has_floors = await page.get_by_text("Floors").count() > 0
 
-            await browser.close()
-
-            return {
-                "status": "healthy" if status == 200 else "unhealthy",
-                "http_status": status,
-                "load_time_seconds": round(load_time, 2),
-                "title": title,
-                "checks": {
-                    "canvas_present": has_canvas,
-                    "header_present": has_header,
-                    "timer_present": has_timer,
-                    "floors_present": has_floors,
-                },
-                "all_passed": all([has_canvas, has_header, has_timer, has_floors]),
-                "checked_at": datetime.now().isoformat(),
-            }
+                return {
+                    "status": "healthy" if status == 200 else "unhealthy",
+                    "http_status": status,
+                    "load_time_seconds": round(load_time, 2),
+                    "title": title,
+                    "checks": {
+                        "canvas_present": has_canvas,
+                        "header_present": has_header,
+                        "timer_present": has_timer,
+                        "floors_present": has_floors,
+                    },
+                    "all_passed": all([has_canvas, has_header, has_timer, has_floors]),
+                    "checked_at": datetime.now().isoformat(),
+                }
+            finally:
+                await browser.close()
     except ImportError:
         return {"status": "error", "message": "Playwright not installed. Run: pip install playwright && playwright install chromium"}
     except Exception as e:
@@ -112,23 +113,23 @@ async def check_canvas_rendering(url: str = "https://studylock.dev") -> dict[str
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
-            await page.goto(url, wait_until="networkidle", timeout=15000)
+            try:
+                page = await browser.new_page()
+                await page.goto(url, wait_until="networkidle", timeout=15000)
 
-            canvas = page.locator("canvas")
-            await canvas.wait_for(state="visible", timeout=10000)
-            box = await canvas.bounding_box()
+                canvas = page.locator("canvas")
+                await canvas.wait_for(state="visible", timeout=10000)
+                box = await canvas.bounding_box()
 
-            result = {
-                "status": "ok" if box and box["width"] > 100 else "fail",
-                "canvas_found": box is not None,
-                "width": box["width"] if box else 0,
-                "height": box["height"] if box else 0,
-                "checked_at": datetime.now().isoformat(),
-            }
-
-            await browser.close()
-            return result
+                return {
+                    "status": "ok" if box and box["width"] > 100 else "fail",
+                    "canvas_found": box is not None,
+                    "width": box["width"] if box else 0,
+                    "height": box["height"] if box else 0,
+                    "checked_at": datetime.now().isoformat(),
+                }
+            finally:
+                await browser.close()
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -140,31 +141,32 @@ async def check_sound_system(url: str = "https://studylock.dev") -> dict[str, An
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
-            await page.goto(url, wait_until="networkidle", timeout=15000)
-
-            sounds = ["Lofi", "Rain", "Ocean", "Birds", "Fire", "Cabin"]
-            found = {}
-            for s in sounds:
-                found[s] = await page.get_by_text(s).count() > 0
-
-            # Try clicking one
-            click_success = False
             try:
-                await page.get_by_text("Lofi").click()
-                # Check if mini player appeared (pause button)
-                click_success = await page.get_by_role("button", name="⏸").count() > 0
-            except Exception:
-                pass
+                page = await browser.new_page()
+                await page.goto(url, wait_until="networkidle", timeout=15000)
 
-            await browser.close()
+                sounds = ["Lofi", "Rain", "Ocean", "Birds", "Fire", "Cabin"]
+                found = {}
+                for s in sounds:
+                    found[s] = await page.get_by_text(s).count() > 0
 
-            return {
-                "status": "ok" if all(found.values()) else "partial",
-                "sounds_found": found,
-                "click_test": click_success,
-                "checked_at": datetime.now().isoformat(),
-            }
+                # Try clicking one
+                click_success = False
+                try:
+                    await page.get_by_text("Lofi").click()
+                    # Check if mini player appeared (pause button)
+                    click_success = await page.get_by_role("button", name="⏸").count() > 0
+                except Exception:
+                    pass
+
+                return {
+                    "status": "ok" if all(found.values()) else "partial",
+                    "sounds_found": found,
+                    "click_test": click_success,
+                    "checked_at": datetime.now().isoformat(),
+                }
+            finally:
+                await browser.close()
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -176,27 +178,28 @@ async def check_room_navigation(url: str = "https://studylock.dev") -> dict[str,
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
-            await page.goto(url, wait_until="networkidle", timeout=15000)
+            try:
+                page = await browser.new_page()
+                await page.goto(url, wait_until="networkidle", timeout=15000)
 
-            # Should start on 1F
-            h2 = page.locator("h2")
-            initial_text = await h2.inner_text()
+                # Should start on 1F
+                h2 = page.locator("h2")
+                initial_text = await h2.inner_text()
 
-            # Click 2F
-            await page.get_by_role("button", name="2F Modern Study").click()
-            await page.wait_for_timeout(1000)
-            switched_text = await h2.inner_text()
+                # Click 2F
+                await page.get_by_role("button", name="2F Modern Study").click()
+                await page.wait_for_timeout(1000)
+                switched_text = await h2.inner_text()
 
-            await browser.close()
-
-            return {
-                "status": "ok" if "2F" in switched_text else "fail",
-                "initial_floor": initial_text,
-                "after_switch": switched_text,
-                "switch_worked": "2F" in switched_text,
-                "checked_at": datetime.now().isoformat(),
-            }
+                return {
+                    "status": "ok" if "2F" in switched_text else "fail",
+                    "initial_floor": initial_text,
+                    "after_switch": switched_text,
+                    "switch_worked": "2F" in switched_text,
+                    "checked_at": datetime.now().isoformat(),
+                }
+            finally:
+                await browser.close()
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

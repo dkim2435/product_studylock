@@ -4,6 +4,7 @@ CrewAI Multi-Agent Crew — actual implementation using crewai package.
 AutoGen handles agent discussion for consensus.
 """
 
+import asyncio
 import json
 from datetime import datetime
 from typing import Any
@@ -130,7 +131,7 @@ class StudyLockCrew:
         crew.tasks = [atmosphere_task, environment_task, room_task]
         crew_status = "live"
         try:
-            crew_result = crew.kickoff()
+            crew_result = await asyncio.to_thread(crew.kickoff)
         except Exception as e:
             crew_status = "fallback"
             crew_result = f"Fallback: {time_info['period']} preset, {'rain' if weather['is_raining'] else 'clear'} conditions."

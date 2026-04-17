@@ -25,11 +25,28 @@ export class Renderer {
   private isDarkRoom: boolean = false;
   private windows: WindowDef[] = [];
   private outdoor: boolean = false;
+  private maskCanvas: HTMLCanvasElement | null = null;
+  private maskCtx: CanvasRenderingContext2D | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
     this.zoom = DEFAULT_ZOOM;
+  }
+
+  private getMaskContext(): CanvasRenderingContext2D {
+    if (!this.maskCanvas) {
+      this.maskCanvas = document.createElement('canvas');
+      this.maskCtx = this.maskCanvas.getContext('2d');
+    }
+    if (
+      this.maskCanvas!.width !== this.canvas.width ||
+      this.maskCanvas!.height !== this.canvas.height
+    ) {
+      this.maskCanvas!.width = this.canvas.width;
+      this.maskCanvas!.height = this.canvas.height;
+    }
+    return this.maskCtx!;
   }
 
   setAssets(assets: LoadedAssets) {
@@ -132,11 +149,12 @@ export class Renderer {
 
     // 5. Dark Room spotlight effect
     if (this.isDarkRoom) {
-      // Use a separate offscreen canvas for the darkness mask
-      const maskCanvas = document.createElement('canvas');
-      maskCanvas.width = this.canvas.width;
-      maskCanvas.height = this.canvas.height;
-      const mctx = maskCanvas.getContext('2d')!;
+      // Reuse a single offscreen canvas for the darkness mask across frames
+      const mctx = this.getMaskContext();
+      const maskCanvas = this.maskCanvas!;
+
+      // Reset any prior composite op from the previous frame
+      mctx.globalCompositeOperation = 'source-over';
 
       // Fill entire mask with darkness
       mctx.fillStyle = 'rgba(5, 3, 0, 0.7)';

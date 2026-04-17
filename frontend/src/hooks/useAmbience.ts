@@ -40,10 +40,18 @@ export function useAmbience() {
     };
   }, []);
 
-  const stopCurrent = useCallback(() => {
+  const stopVisualizer = useCallback(() => {
     if (animFrameRef.current) {
       cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
+    }
+  }, []);
+
+  const stopCurrent = useCallback(() => {
+    stopVisualizer();
+    if (analyserRef.current) {
+      try { analyserRef.current.disconnect(); } catch { /* already disconnected */ }
+      analyserRef.current = null;
     }
     if (howlRef.current) {
       howlRef.current.fade(howlRef.current.volume(), 0, 300);
@@ -51,10 +59,9 @@ export function useAmbience() {
       setTimeout(() => { old.stop(); old.unload(); }, 300);
       howlRef.current = null;
     }
-    analyserRef.current = null;
     setIsPlaying(false);
     setFreqData(new Uint8Array(32));
-  }, []);
+  }, [stopVisualizer]);
 
   // Visualizer loop — reads frequency data from analyser
   const startVisualizer = useCallback(() => {
@@ -159,12 +166,15 @@ export function useAmbience() {
 
     if (isPlaying) {
       howlRef.current.pause();
+      stopVisualizer();
+      setFreqData(new Uint8Array(32));
       setIsPlaying(false);
     } else {
       howlRef.current.play();
+      if (analyserRef.current && !animFrameRef.current) startVisualizer();
       setIsPlaying(true);
     }
-  }, [isPlaying, currentSound]);
+  }, [isPlaying, currentSound, stopVisualizer, startVisualizer]);
 
   const nextTrack = useCallback(() => {
     if (!currentSound) return;

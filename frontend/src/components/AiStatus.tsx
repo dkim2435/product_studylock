@@ -8,12 +8,14 @@ interface PipelineStatus {
   mcp: string;
 }
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  'https://proactive-appreciation-production-2ff3.up.railway.app';
+
 export default function AiStatus() {
   const [status, setStatus] = useState<PipelineStatus | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://proactive-appreciation-production-2ff3.up.railway.app';
 
   useEffect(() => {
     async function fetchStatus() {
@@ -36,7 +38,7 @@ export default function AiStatus() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [API_URL]);
+  }, []);
 
   const isLive = status && status.crewai === 'live' && status.autogen === 'live' && status.mcp === 'live';
   const isPartial = status && (status.crewai === 'live' || status.mcp === 'live');

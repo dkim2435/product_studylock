@@ -497,10 +497,10 @@ async def log_deploy(page_id: str, status: str, version: str, environment: str, 
     return {"status": "ok"}
 
 
-async def log_test_results(page_id: str, total: int, passed: int, failed: int, failed_cases: list[str] = []) -> dict:
+async def log_test_results(page_id: str, total: int, passed: int, failed: int, failed_cases: list[str] | None = None) -> dict:
     blocks = [_div(), _h3(f"Test Run - {datetime.now().strftime('%Y-%m-%d %H:%M')}"),
               _bullet(f"Total: {total} | Passed: {passed} | Failed: {failed}")]
-    for c in failed_cases:
+    for c in failed_cases or []:
         blocks.append(_bullet(f"FAIL: {c}"))
     await _append(page_id, blocks)
     return {"status": "ok"}

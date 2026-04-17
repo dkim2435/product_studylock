@@ -25,44 +25,50 @@ export function useTimer(onBreakChange?: (isOnBreak: boolean) => void) {
     }
   }, []);
 
-  // Tick timer
+  // onBreakChange is called from inside the tick effect; capture latest in a ref
+  // so we don't have to include it in deps (which would recreate the interval).
+  const onBreakChangeRef = useRef(onBreakChange);
   useEffect(() => {
-    if (timer.isRunning && timer.timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimer(prev => ({
-          ...prev,
-          timeLeft: prev.timeLeft - 1,
-        }));
-      }, 1000);
-    } else if (timer.timeLeft === 0 && timer.isRunning) {
-      clearTimerInterval();
+    onBreakChangeRef.current = onBreakChange;
+  }, [onBreakChange]);
 
-      if (timer.mode === 'focus') {
-        // Focus done — auto break
-        const newPomodoros = timer.totalPomodoros + 1;
-        const isLong = newPomodoros % POMODOROS_BEFORE_LONG_BREAK === 0;
+  // Tick every second while running. The interval is created once per
+  // isRunning transition and uses functional setTimer so it doesn't need
+  // timer.timeLeft in deps (which would recreate it every tick).
+  useEffect(() => {
+    if (!timer.isRunning) return;
 
-        setTimer({
-          mode: isLong ? 'longBreak' : 'break',
-          timeLeft: isLong ? LONG_BREAK_DURATION : BREAK_DURATION,
-          totalPomodoros: newPomodoros,
-          isRunning: true,
-        });
-        onBreakChange?.(true);
-      } else {
-        // Break done — back to focus
-        setTimer(prev => ({
+    intervalRef.current = setInterval(() => {
+      setTimer(prev => {
+        if (prev.timeLeft > 1) {
+          return { ...prev, timeLeft: prev.timeLeft - 1 };
+        }
+
+        // Transition at zero
+        if (prev.mode === 'focus') {
+          const newPomodoros = prev.totalPomodoros + 1;
+          const isLong = newPomodoros % POMODOROS_BEFORE_LONG_BREAK === 0;
+          onBreakChangeRef.current?.(true);
+          return {
+            mode: isLong ? 'longBreak' : 'break',
+            timeLeft: isLong ? LONG_BREAK_DURATION : BREAK_DURATION,
+            totalPomodoros: newPomodoros,
+            isRunning: true,
+          };
+        }
+
+        onBreakChangeRef.current?.(false);
+        return {
           ...prev,
           mode: 'focus',
           timeLeft: FOCUS_DURATION,
           isRunning: true,
-        }));
-        onBreakChange?.(false);
-      }
-    }
+        };
+      });
+    }, 1000);
 
     return clearTimerInterval;
-  }, [timer.isRunning, timer.timeLeft, timer.mode, timer.totalPomodoros, clearTimerInterval, onBreakChange]);
+  }, [timer.isRunning, clearTimerInterval]);
 
   const start = useCallback(() => {
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {

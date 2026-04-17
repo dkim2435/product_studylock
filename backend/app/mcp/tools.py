@@ -84,27 +84,44 @@ def get_time_info() -> dict[str, Any]:
 
 
 def get_room_stats() -> dict[str, Any]:
-    """Get room statistics. Used by Room Manager Agent for load balancing."""
-    # In production, this would query Supabase
-    # For now, return simulated stats
-    from random import randint
+    """Get room statistics. Used by Room Manager Agent for load balancing.
+
+    Until wired to Supabase, values are deterministically seeded per hour
+    so the agent observes stable data across a single decision cycle rather
+    than randomness that contradicts itself between the check and the action.
+    """
+    # In production, this would query Supabase. The placeholder below is
+    # intentionally deterministic per hour to avoid the Room Manager Agent
+    # making decisions on shifting sand.
+    from random import Random
+
+    seed = datetime.now(timezone.utc).strftime("%Y%m%d%H")
+
+    def _rng_int(key: str, lo: int, hi: int) -> int:
+        return Random(f"{seed}:{key}").randint(lo, hi)
 
     floors = {}
     for i in range(1, 15):
+        current = _rng_int(f"{i}F", 3, 15)
         floors[f"{i}F"] = {
-            "current_users": randint(3, 15),
+            "current_users": current,
             "max_users": 20,
-            "utilization": 0,
+            "utilization": round(current / 20, 2),
         }
-        floors[f"{i}F"]["utilization"] = round(
-            floors[f"{i}F"]["current_users"] / floors[f"{i}F"]["max_users"], 2
-        )
 
-    floors["cafe"] = {"current_users": randint(2, 10), "max_users": 30, "utilization": 0}
-    floors["cafe"]["utilization"] = round(floors["cafe"]["current_users"] / 30, 2)
+    cafe_current = _rng_int("cafe", 2, 10)
+    floors["cafe"] = {
+        "current_users": cafe_current,
+        "max_users": 30,
+        "utilization": round(cafe_current / 30, 2),
+    }
 
-    floors["garden"] = {"current_users": randint(2, 8), "max_users": 30, "utilization": 0}
-    floors["garden"]["utilization"] = round(floors["garden"]["current_users"] / 30, 2)
+    garden_current = _rng_int("garden", 2, 8)
+    floors["garden"] = {
+        "current_users": garden_current,
+        "max_users": 30,
+        "utilization": round(garden_current / 30, 2),
+    }
 
     total = sum(f["current_users"] for f in floors.values())
     high_util = [k for k, v in floors.items() if v["utilization"] > 0.8]
@@ -114,6 +131,7 @@ def get_room_stats() -> dict[str, Any]:
         "rooms": floors,
         "high_utilization_rooms": high_util,
         "needs_expansion": len(high_util) > len(floors) * 0.8,
+        "source": "simulated_hourly_seed",
     }
 
 
