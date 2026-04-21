@@ -70,6 +70,7 @@ class StudyLockCrew:
         self.last_check_time: datetime | None = None
         self.last_period: str | None = None
         self.discussion_log: list[dict[str, Any]] = []
+        self._lock = asyncio.Lock()
 
     async def should_run(self) -> tuple[bool, str]:
         """Check if agents should run (cost optimization)."""
@@ -86,6 +87,10 @@ class StudyLockCrew:
 
     async def run(self, room_id: str = "1F") -> dict[str, Any]:
         """Run the full agent crew pipeline."""
+        async with self._lock:
+            return await self._run_locked(room_id)
+
+    async def _run_locked(self, room_id: str) -> dict[str, Any]:
         self.last_check_time = datetime.now()
 
         # Step 1: MCP tools gather data

@@ -73,6 +73,18 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
     }
   }, [weather.isNight, weather.isRaining]);
 
+  // Zoom changes should not tear down the entire renderer / game loop.
+  useEffect(() => {
+    const renderer = rendererRef.current;
+    const container = containerRef.current;
+    if (!renderer) return;
+    renderer.setZoom(zoom);
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      renderer.resize(rect.width, rect.height);
+    }
+  }, [zoom]);
+
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
 
@@ -144,7 +156,7 @@ export default function StudyRoom({ onUserCountChange, roomId, localPalette }: S
       resizeObserver?.disconnect();
       cmRef.current = null;
     };
-  }, [roomId, localPalette, zoom]);
+  }, [roomId, localPalette]);
 
   const handleZoomIn = () => setZoom(z => Math.min(z + 1, 8));
   const handleZoomOut = () => setZoom(z => Math.max(z - 1, 1));

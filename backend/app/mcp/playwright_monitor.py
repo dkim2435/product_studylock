@@ -15,6 +15,20 @@ from mcp.server import Server
 from mcp.types import Tool, TextContent
 import json
 
+# SSRF defense: only these URLs may be navigated by the MCP-exposed browser.
+# FastAPI endpoints call the functions directly with the default URL, so this
+# allowlist only bites when the MCP dispatcher is reachable from outside.
+ALLOWED_URLS = frozenset({
+    "https://studylock.dev",
+    "https://www.studylock.dev",
+})
+
+
+def _assert_allowed_url(url: str) -> str:
+    if url not in ALLOWED_URLS:
+        raise ValueError(f"URL not allowed: {url}")
+    return url
+
 
 # Playwright MCP tools registered on the MCP server
 PLAYWRIGHT_TOOLS = [
@@ -227,5 +241,9 @@ def register_playwright_tools(server: Server):
             return [TextContent(type="text", text=json.dumps({"error": f"Unknown tool: {name}"}))]
 
         url = arguments.get("url", "https://studylock.dev")
+        try:
+            _assert_allowed_url(url)
+        except ValueError as e:
+            return [TextContent(type="text", text=json.dumps({"error": str(e)}))]
         result = await handler(url)
         return [TextContent(type="text", text=json.dumps(result, default=str))]

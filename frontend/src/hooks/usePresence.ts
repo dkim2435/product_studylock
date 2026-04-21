@@ -119,7 +119,10 @@ export function usePresence(roomId: string, localPalette: number) {
     }, 12000 + Math.random() * 18000);
 
     return () => {
-      channel.unsubscribe();
+      // removeChannel both unsubscribes and tears down the underlying socket
+      // entry so a rapid remount (key={currentRoomId}) doesn't collide with
+      // the prior channel still lingering.
+      supabase.removeChannel(channel);
       channelRef.current = null;
       if (dummyIntervalRef.current) clearInterval(dummyIntervalRef.current);
     };

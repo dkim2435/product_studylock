@@ -50,6 +50,8 @@ export function useAmbience() {
   const stopCurrent = useCallback(() => {
     stopVisualizer();
     if (analyserRef.current) {
+      // Sever both ends: masterGain → analyser edge, and analyser → downstream.
+      try { Howler.masterGain?.disconnect(analyserRef.current); } catch { /* not connected */ }
       try { analyserRef.current.disconnect(); } catch { /* already disconnected */ }
       analyserRef.current = null;
     }

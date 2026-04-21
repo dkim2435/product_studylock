@@ -15,8 +15,9 @@ Architecture:
 import asyncio
 import logging
 import os
+import re
 
-from fastapi import Depends, FastAPI, Header, HTTPException, status as http_status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, status as http_status
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -56,6 +57,20 @@ if not API_SECRET_KEY:
         "/api/notion/*, /api/monitor/*, /api/graph/run) are UNAUTHENTICATED. "
         "Set API_SECRET_KEY on the server to require X-API-Key."
     )
+
+# Rooms the agents are allowed to reason about. Any unknown room_id is rejected
+# before it flows into LLM prompt strings (prompt-injection defense).
+ROOM_ID_PATTERN = re.compile(r"^(?:[1-9]|1[0-4])F$|^(?:cafe|garden)$")
+ROOM_ID_QUERY = Query(default="1F", min_length=1, max_length=16, pattern=ROOM_ID_PATTERN.pattern)
+
+
+def _validated_room_id(room_id: str) -> str:
+    if not ROOM_ID_PATTERN.match(room_id):
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail="room_id must be one of 1F-14F, cafe, or garden",
+        )
+    return room_id
 
 
 app = FastAPI(
@@ -161,11 +176,12 @@ async def time_info():
 
 
 @app.post("/api/agents/check", dependencies=[Depends(require_api_key)])
-async def agents_check(room_id: str = "1F"):
+async def agents_check(room_id: str = ROOM_ID_QUERY):
     """
     Check if agents should run based on conditions.
     Only runs if conditions have changed (cost optimization).
     """
+    room_id = _validated_room_id(room_id)
     should_run, trigger = await study_lock_crew.should_run()
 
     if not should_run:
@@ -180,8 +196,9 @@ async def agents_check(room_id: str = "1F"):
 
 
 @app.post("/api/agents/force", dependencies=[Depends(require_api_key)])
-async def agents_force(room_id: str = "1F"):
+async def agents_force(room_id: str = ROOM_ID_QUERY):
     """Force run the agent crew (for demo/testing)."""
+    room_id = _validated_room_id(room_id)
     result = await study_lock_crew.run(room_id)
     return {"ran": True, "reason": "forced", "result": result}
 
@@ -197,8 +214,9 @@ async def agents_log():
 
 
 @app.post("/api/graph/run", dependencies=[Depends(require_api_key)])
-async def graph_run(room_id: str = "1F"):
+async def graph_run(room_id: str = ROOM_ID_QUERY):
     """Run the LangGraph room state machine."""
+    room_id = _validated_room_id(room_id)
     initial_state: RoomState = {
         "time_period": "morning",
         "is_raining": False,
@@ -212,7 +230,7 @@ async def graph_run(room_id: str = "1F"):
         "last_decision": "",
     }
 
-    result = room_graph.invoke(initial_state)
+    result = await asyncio.to_thread(room_graph.invoke, initial_state)
     return {"state": result}
 
 
